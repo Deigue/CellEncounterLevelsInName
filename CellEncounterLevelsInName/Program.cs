@@ -32,6 +32,8 @@ namespace CellEncounterLevelsInName
             bool debugMode = true;
 
             Console.WriteLine("Running Cell Encounter Levels In Name ...");
+            Console.WriteLine();
+
             int cellCounter = 0;
             ILinkCache cache = state.LinkCache;
             foreach (var cellContext in state.LoadOrder.PriorityOrder.Cell().WinningContextOverrides(cache))
@@ -48,12 +50,32 @@ namespace CellEncounterLevelsInName
                 sbyte minLevel = encounterZone.MinLevel;
                 sbyte maxLevel = encounterZone.MaxLevel;
 
-                if (debugMode) Console.WriteLine($"Cell {cellName} with ECZN {minLevel} to {maxLevel}.");
+                string nameTemplate;
+                if (maxLevel > minLevel)
+                {
+                    nameTemplate = "{0} ({1} ~ {2})";
+                } 
+                else if (maxLevel == minLevel) 
+                {
+                    nameTemplate = "{0} ({1})";
+                }
+                else
+                {
+                    nameTemplate = "{0} ({1}+)";
+                }
+
+                string newCellName = string.Format(nameTemplate, cellName, minLevel, maxLevel);
+
+                if (debugMode) Console.WriteLine($"Changing Cell name from \"{cellName}\" to \"{newCellName}\"");
+
+                var overriddenCell = cellContext.GetOrAddAsOverride(state.PatchMod);
+                overriddenCell.Name = newCellName;
                 cellCounter++;
             }
 
-
+            Console.WriteLine();
             Console.WriteLine($"Patched {cellCounter} Cells.");
+            Console.WriteLine();
         }
     }
 }
