@@ -1,6 +1,6 @@
 {
   "Nickname": "CellEncounterLevelsInName",
-  "HideByDefault": true,
+  "HideByDefault": false,
   "OneLineDescription": "Adds Encounter zone levels to cell names.",
   "LongDescription": ""
 }
