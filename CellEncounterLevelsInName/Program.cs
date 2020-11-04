@@ -13,6 +13,8 @@ namespace CellEncounterLevelsInName
 {
     public class Program
     {
+        
+
         public static int Main(string[] args)
         {
             return SynthesisPipeline.Instance.Patch<ISkyrimMod, ISkyrimModGetter>(
@@ -47,12 +49,20 @@ namespace CellEncounterLevelsInName
             return parsedString != "ERROR";
         }
 
+       
+
         public static void RunPatch(SynthesisState<ISkyrimMod, ISkyrimModGetter> state)
         {
-            bool debugMode = true;
+            bool debugMode = true; // more debugging messages.
+            bool changeMapMarkers = true; // make this configurable later.
+
             Console.WriteLine(); // Spaces out this patchers output.
 
+            string formulaRangedLeveled = "";
+            string formulaDeleveled = "";
+            string formulaLeveled = "";
             string configFilePath = Path.Combine(state.ExtraSettingsDataPath, "config.json");
+
             if (!File.Exists(configFilePath))
             {
                 Console.WriteLine("\"config.json\" cannot be found in the users Data folder.");
@@ -60,10 +70,8 @@ namespace CellEncounterLevelsInName
             }
 
             JObject config = JObject.Parse(File.ReadAllText(configFilePath));
-            string formulaRangedLeveled = "";
-            string formulaDeleveled = "";
-            string formulaLeveled = "";
-            bool changeMapMarkers = true; // make this configurable later.
+            
+            
 
             if (!ParseTemplateString(config, "formulaRangedLeveled", out formulaRangedLeveled) ||
                 !ParseTemplateString(config, "formulaDeleveled", out formulaDeleveled) ||
@@ -72,17 +80,22 @@ namespace CellEncounterLevelsInName
                 Console.WriteLine("Fields \"formulaRangedLeveled\", \"formulaDeleveled\" and \"formulaLeveled\" must be specified in \"config.json\"");
                 return;
             }
-            
+
+            Config configuration = new Config(formulaRangedLeveled, formulaDeleveled, formulaLeveled);
+
             Console.WriteLine("*** Cell Encounter Levels In Name - Configuration ***");
             Console.WriteLine($" formulaRangedLeveled: {formulaRangedLeveled}");
             Console.WriteLine($" formulaDeleveled: {formulaDeleveled}");
             Console.WriteLine($" formulaLeveled: {formulaLeveled}");
             Console.WriteLine("Running Cell Encounter Levels In Name ...");
+            Console.WriteLine("*****************************************************");
             Console.WriteLine();
 
             int cellCounter = 0;
+            int mapMarkerCounter = 0;
             ILinkCache cache = state.LinkCache;
             Lazy<Dictionary<FormKey, HashSet<IEncounterZoneGetter>>> mapMarkerZones = new Lazy<Dictionary<FormKey, HashSet<IEncounterZoneGetter>>>();
+            //Lazy<Dictionary<PlacedObject, HashSet<IEncounterZoneGetter>>> mapMarkerZones = new Lazy<Dictionary<PlacedObject, HashSet<IEncounterZoneGetter>>>();
 
             foreach (var cellContext in state.LoadOrder.PriorityOrder.Cell().WinningContextOverrides(cache))
             {
@@ -98,30 +111,16 @@ namespace CellEncounterLevelsInName
                 sbyte minLevel = encounterZone.MinLevel;
                 sbyte maxLevel = encounterZone.MaxLevel;
 
-                string nameTemplate;
-                if (maxLevel > minLevel)
-                {
-                    nameTemplate = formulaRangedLeveled;
-                }
-                else if (maxLevel == minLevel)
-                {
-                    nameTemplate = formulaDeleveled;
-                }
-                else
-                {
-                    nameTemplate = formulaLeveled;
-                }
-
-
-                string newCellName = string.Format(nameTemplate, cellName, minLevel, maxLevel);
-
-                if (debugMode) Console.WriteLine($"Changing Cell name from \"{cellName}\" to \"{newCellName}\"");
+                var newCellName = configuration.MakeNewName(cellName, minLevel, maxLevel);
+               
+                Console.WriteLine($"Changing Cell name from \"{cellName}\" to \"{newCellName}\"");
 
                 var overriddenCell = cellContext.GetOrAddAsOverride(state.PatchMod);
                 overriddenCell.Name = newCellName;
                 cellCounter++;
 
                 if (!changeMapMarkers) continue;
+
 
                 cell.Location.TryResolve(cache, out var location);
                 if (location == null) continue;
@@ -138,21 +137,68 @@ namespace CellEncounterLevelsInName
                 {
                     var encounterZones = new HashSet<IEncounterZoneGetter> { encounterZone };
                     mapMarkerZones.Value.Add(placedSimple.FormKey, encounterZones);
+
+                    if (debugMode) Console.WriteLine($">>> New MapMarkerZone for {placedSimple.FormKey}.");
                 }
                 else if (mapMarkerZones.Value.TryGetValue(placedSimple.FormKey, out var encounterZones))
                 {
                     encounterZones.Add(encounterZone);
                 }
-            }
-
-            if (mapMarkerZones.IsValueCreated) // Implies activity occurred in populating map marker zones ...
-            {
 
             }
-
 
             Console.WriteLine();
             Console.WriteLine($"Patched {cellCounter} Cells.");
+            Console.WriteLine();
+            
+
+            if (mapMarkerZones.IsValueCreated) // Implies activity occurred in populating map marker zones ...
+            {
+                Console.WriteLine($"Patching Map Marker Names ...");
+                foreach (var mapMarkerZone in mapMarkerZones.Value)
+                {
+                    var placedSimple = cache.Lookup<IPlacedSimpleGetter>(mapMarkerZone.Key);
+                    var placedObject = placedSimple as PlacedObject;
+                    if (placedObject == null) continue;
+                    var mapMarkerName = placedObject.MapMarker?.Name?.String;
+                    if (mapMarkerName == null) continue;
+                    
+                    sbyte minLevel = -128;
+                    sbyte maxLevel = 127;
+                    foreach ( var encounterZone in mapMarkerZone.Value)
+                    {
+                        minLevel = Math.Min(minLevel, encounterZone.MinLevel);
+                        maxLevel = Math.Max(maxLevel, encounterZone.MaxLevel);
+                    }
+
+                    var newMarkerName = configuration.MakeNewName(mapMarkerName, minLevel, maxLevel);
+                    
+
+                    // contextual information, ready made map marker is here ... no info is known about its parent worldSpace.
+                    //var modifiedMapMarker = placedObject.DeepCopy();
+
+                    var matchingContext = state.LoadOrder.PriorityOrder.IPlacedSimple().WinningContextOverrides(cache)
+                        .Where(context => context.Record is PlacedObject)
+                        .First(context =>
+                        {
+                            var placedObj = context.Record as PlacedObject;
+                            return (placedObj == placedObject);
+                        });
+
+                    Console.WriteLine($"Changing Map marker from \"{mapMarkerName}\" to \"{newMarkerName}\"");
+                    var newPlacedSimple =  matchingContext.GetOrAddAsOverride(state.PatchMod);
+                    if (newPlacedSimple is PlacedObject)
+                    {
+                        var newPlacedObject = newPlacedSimple as PlacedObject;
+                        if (newPlacedObject == null || newPlacedObject.MapMarker == null) continue;
+                        newPlacedObject.MapMarker.Name = newMarkerName;
+                    }
+                    mapMarkerCounter++;
+                }
+            }
+
+            Console.WriteLine();
+            Console.WriteLine($"Patched {mapMarkerCounter} Map markers.");
             Console.WriteLine();
         }
     }
