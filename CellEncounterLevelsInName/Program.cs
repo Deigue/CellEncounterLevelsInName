@@ -63,6 +63,7 @@ namespace CellEncounterLevelsInName
             string formulaRangedLeveled = "";
             string formulaDeleveled = "";
             string formulaLeveled = "";
+            bool mapMarkers = false;
 
             if (!ParseTemplateString(config, "formulaRangedLeveled", out formulaRangedLeveled) ||
                 !ParseTemplateString(config, "formulaDeleveled", out formulaDeleveled) ||
@@ -117,7 +118,16 @@ namespace CellEncounterLevelsInName
                 var overriddenCell = cellContext.GetOrAddAsOverride(state.PatchMod);
                 overriddenCell.Name = newCellName;
                 cellCounter++;
+
+                if (!mapMarkers) continue;
+
+                cell.Location.TryResolve(state.LinkCache, out var location);
+                if (location != null)
+                {
+                    //location.
+                }
             }
+
 
             Console.WriteLine();
             Console.WriteLine($"Patched {cellCounter} Cells.");
