@@ -1,4 +1,4 @@
-#Cell Encounter Levels In Name
+# Cell Encounter Levels In Name
 
 Finds the Encounter Zone minimum and maximum levels and patches them into the cell names based on the template specified. Additional support will be added in future to also propagate this to map markers.
 
