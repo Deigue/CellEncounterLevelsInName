@@ -63,7 +63,7 @@ namespace CellEncounterLevelsInName
             string formulaRangedLeveled = "";
             string formulaDeleveled = "";
             string formulaLeveled = "";
-            bool mapMarkers = false;
+            bool changeMapMarkers = true; // make this configurable later.
 
             if (!ParseTemplateString(config, "formulaRangedLeveled", out formulaRangedLeveled) ||
                 !ParseTemplateString(config, "formulaDeleveled", out formulaDeleveled) ||
@@ -82,6 +82,8 @@ namespace CellEncounterLevelsInName
 
             int cellCounter = 0;
             ILinkCache cache = state.LinkCache;
+            Lazy<Dictionary<FormKey, HashSet<IEncounterZoneGetter>>> mapMarkerZones = new Lazy<Dictionary<FormKey, HashSet<IEncounterZoneGetter>>>();
+
             foreach (var cellContext in state.LoadOrder.PriorityOrder.Cell().WinningContextOverrides(cache))
             {
                 var cell = cellContext.Record;
@@ -119,13 +121,33 @@ namespace CellEncounterLevelsInName
                 overriddenCell.Name = newCellName;
                 cellCounter++;
 
-                if (!mapMarkers) continue;
+                if (!changeMapMarkers) continue;
 
-                cell.Location.TryResolve(state.LinkCache, out var location);
-                if (location != null)
+                cell.Location.TryResolve(cache, out var location);
+                if (location == null) continue;
+                location.WorldLocationMarkerRef.TryResolve(cache, out var placedSimple);
+                if (placedSimple == null ||
+                    placedSimple is PlacedObject ||
+                    string.IsNullOrEmpty((placedSimple as PlacedObject)?.MapMarker?.Name?.String))
                 {
-                    //location.
+                    continue;
                 }
+
+                var mapMarker = (placedSimple as PlacedObject)?.MapMarker;
+                if (!mapMarkerZones.Value.ContainsKey(placedSimple.FormKey))
+                {
+                    var encounterZones = new HashSet<IEncounterZoneGetter> { encounterZone };
+                    mapMarkerZones.Value.Add(placedSimple.FormKey, encounterZones);
+                }
+                else if (mapMarkerZones.Value.TryGetValue(placedSimple.FormKey, out var encounterZones))
+                {
+                    encounterZones.Add(encounterZone);
+                }
+            }
+
+            if (mapMarkerZones.IsValueCreated) // Implies activity occurred in populating map marker zones ...
+            {
+
             }
 
 
