@@ -54,7 +54,7 @@ namespace CellEncounterLevelsInName
         public static void RunPatch(SynthesisState<ISkyrimMod, ISkyrimModGetter> state)
         {
             bool debugMode = true; // more debugging messages.
-            bool changeMapMarkers = true; // make this configurable later.
+            bool changeMapMarkers = false; // make this configurable later.
 
             Console.WriteLine(); // Spaces out this patchers output.
 
@@ -84,9 +84,9 @@ namespace CellEncounterLevelsInName
             Config configuration = new Config(formulaRangedLeveled, formulaDeleveled, formulaLeveled);
 
             Console.WriteLine("*** Cell Encounter Levels In Name - Configuration ***");
-            Console.WriteLine($" formulaRangedLeveled: {formulaRangedLeveled}");
-            Console.WriteLine($" formulaDeleveled: {formulaDeleveled}");
-            Console.WriteLine($" formulaLeveled: {formulaLeveled}");
+            Console.WriteLine($" formulaRangedLeveled: {configuration.FormulaRangedLeveled}");
+            Console.WriteLine($" formulaDeleveled: {configuration.FormulaDeleveled}");
+            Console.WriteLine($" formulaLeveled: {configuration.FormulaLeveled}");
             Console.WriteLine("Running Cell Encounter Levels In Name ...");
             Console.WriteLine("*****************************************************");
             Console.WriteLine();
@@ -133,9 +133,10 @@ namespace CellEncounterLevelsInName
                 }
 
                 var mapMarker = (placedSimple as PlacedObject)?.MapMarker;
-                if (!mapMarkerZones.Value.ContainsKey(placedSimple.FormKey))
+                if (!mapMarkerZones.IsValueCreated || !mapMarkerZones.Value.ContainsKey(placedSimple.FormKey))
                 {
-                    var encounterZones = new HashSet<IEncounterZoneGetter> { encounterZone };
+                    var encounterZones = new HashSet<IEncounterZoneGetter> { encounterZone};
+                    //encounterZones.compa
                     mapMarkerZones.Value.Add(placedSimple.FormKey, encounterZones);
 
                     if (debugMode) Console.WriteLine($">>> New MapMarkerZone for {placedSimple.FormKey}.");

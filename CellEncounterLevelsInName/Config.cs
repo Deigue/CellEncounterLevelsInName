@@ -12,9 +12,9 @@ namespace CellEncounterLevelsInName
 
         public Config(string formulaRangedLeveled, string formulaDeleved, string formulaLeveled)
         {
-            FormulaRangedLeveled = "ERROR";
-            FormulaDeleveled = "ERROR";
-            FormulaLeveled = "ERROR";
+            FormulaRangedLeveled = formulaRangedLeveled;
+            FormulaDeleveled = formulaDeleved;
+            FormulaLeveled = formulaLeveled;
         }
 
         public string MakeNewName(string oldName, sbyte minLevel, sbyte maxLevel)
