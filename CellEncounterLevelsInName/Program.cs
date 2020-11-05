@@ -8,6 +8,7 @@ using Noggog;
 using Alphaleonis.Win32.Filesystem;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
+using System.Runtime.InteropServices.ComTypes;
 
 namespace CellEncounterLevelsInName
 {
@@ -54,7 +55,8 @@ namespace CellEncounterLevelsInName
         public static void RunPatch(SynthesisState<ISkyrimMod, ISkyrimModGetter> state)
         {
             bool debugMode = true; // more debugging messages.
-            bool changeMapMarkers = false; // make this configurable later.
+            //bool changeMapMarkers = false; // make this configurable later.
+            bool changeMapMarkers = true;
 
             Console.WriteLine(); // Spaces out this patchers output.
 
@@ -94,8 +96,8 @@ namespace CellEncounterLevelsInName
             int cellCounter = 0;
             int mapMarkerCounter = 0;
             ILinkCache cache = state.LinkCache;
-            Lazy<Dictionary<FormKey, HashSet<IEncounterZoneGetter>>> mapMarkerZones = new Lazy<Dictionary<FormKey, HashSet<IEncounterZoneGetter>>>();
-            //Lazy<Dictionary<PlacedObject, HashSet<IEncounterZoneGetter>>> mapMarkerZones = new Lazy<Dictionary<PlacedObject, HashSet<IEncounterZoneGetter>>>();
+            //Lazy<Dictionary<FormKey, HashSet<IEncounterZoneGetter>>> mapMarkerZones = new Lazy<Dictionary<FormKey, HashSet<IEncounterZoneGetter>>>();
+            Lazy<Dictionary<IPlacedObjectGetter, HashSet<IEncounterZoneGetter>>> mapMarkerZones = new Lazy<Dictionary<IPlacedObjectGetter, HashSet<IEncounterZoneGetter>>>();
 
             foreach (var cellContext in state.LoadOrder.PriorityOrder.Cell().WinningContextOverrides(cache))
             {
@@ -125,23 +127,24 @@ namespace CellEncounterLevelsInName
                 cell.Location.TryResolve(cache, out var location);
                 if (location == null) continue;
                 location.WorldLocationMarkerRef.TryResolve(cache, out var placedSimple);
-                if (placedSimple == null ||
-                    placedSimple is PlacedObject ||
-                    string.IsNullOrEmpty((placedSimple as PlacedObject)?.MapMarker?.Name?.String))
+                var placedObject = placedSimple as IPlacedObjectGetter;
+                if (placedObject == null ||
+                    //!(placedSimple is IPlacedObjectGetter) ||
+                    string.IsNullOrEmpty(placedObject.MapMarker?.Name?.String))
                 {
                     continue;
                 }
 
-                var mapMarker = (placedSimple as PlacedObject)?.MapMarker;
-                if (!mapMarkerZones.IsValueCreated || !mapMarkerZones.Value.ContainsKey(placedSimple.FormKey))
+                var mapMarker = placedObject.MapMarker;
+                if (!mapMarkerZones.IsValueCreated || !mapMarkerZones.Value.ContainsKey(placedObject))
                 {
-                    var encounterZones = new HashSet<IEncounterZoneGetter> { encounterZone};
-                    //encounterZones.compa
-                    mapMarkerZones.Value.Add(placedSimple.FormKey, encounterZones);
+                    var encounterZones = new HashSet<IEncounterZoneGetter>(MajorRecord.FormKeyEqualityComparer) {encounterZone};
+                    
+                    mapMarkerZones.Value.Add(placedObject, encounterZones);
 
-                    if (debugMode) Console.WriteLine($">>> New MapMarkerZone for {placedSimple.FormKey}.");
+                    if (debugMode) Console.WriteLine($">>> New MapMarkerZone for {placedObject.MapMarker?.Name}.");
                 }
-                else if (mapMarkerZones.Value.TryGetValue(placedSimple.FormKey, out var encounterZones))
+                else if (mapMarkerZones.Value.TryGetValue(placedObject, out var encounterZones))
                 {
                     encounterZones.Add(encounterZone);
                 }
@@ -158,8 +161,8 @@ namespace CellEncounterLevelsInName
                 Console.WriteLine($"Patching Map Marker Names ...");
                 foreach (var mapMarkerZone in mapMarkerZones.Value)
                 {
-                    var placedSimple = cache.Lookup<IPlacedSimpleGetter>(mapMarkerZone.Key);
-                    var placedObject = placedSimple as PlacedObject;
+                    var placedObject = mapMarkerZone.Key;
+                    //var placedObject = placedSimple as IPlacedObjectGetter;
                     if (placedObject == null) continue;
                     var mapMarkerName = placedObject.MapMarker?.Name?.String;
                     if (mapMarkerName == null) continue;
@@ -173,19 +176,21 @@ namespace CellEncounterLevelsInName
                     }
 
                     var newMarkerName = configuration.MakeNewName(mapMarkerName, minLevel, maxLevel);
-                    
+
 
                     // contextual information, ready made map marker is here ... no info is known about its parent worldSpace.
                     //var modifiedMapMarker = placedObject.DeepCopy();
 
-                    var matchingContext = state.LoadOrder.PriorityOrder.IPlacedSimple().WinningContextOverrides(cache)
-                        .Where(context => context.Record is PlacedObject)
+                    var matchingContext = state.LoadOrder.PriorityOrder.PlacedObject().WinningContextOverrides(cache)
+                        .First(ctx => ctx.Record == placedObject);
+                    /*
+                        .Where(context => context.Record is IPlacedObjectGetter)
                         .First(context =>
                         {
-                            var placedObj = context.Record as PlacedObject;
+                            var placedObj = context.Record as IPlacedObjectGetter;
                             return (placedObj == placedObject);
                         });
-
+                    */
                     Console.WriteLine($"Changing Map marker from \"{mapMarkerName}\" to \"{newMarkerName}\"");
                     var newPlacedSimple =  matchingContext.GetOrAddAsOverride(state.PatchMod);
                     if (newPlacedSimple is PlacedObject)
