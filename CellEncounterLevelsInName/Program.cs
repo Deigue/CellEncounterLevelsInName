@@ -211,6 +211,12 @@ namespace CellEncounterLevelsInName
                     newPlacedObject.MapMarker.Name = newMarkerName;
                     mapMarkerCounter++;
                     
+                    if (mapMarkerCounter == 5)
+                    {
+                        // good enuf sample size, stop here.
+                        break;
+                    }
+
                 }
             }
 
