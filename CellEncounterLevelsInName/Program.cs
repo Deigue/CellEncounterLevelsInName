@@ -142,13 +142,24 @@ namespace CellEncounterLevelsInName
                     
                     mapMarkerZones.Value.Add(placedObject, encounterZones);
 
-                    if (debugMode) Console.WriteLine($">>> New MapMarkerZone for {placedObject.MapMarker?.Name}.");
+                    //if (debugMode) Console.WriteLine($">>> New MapMarkerZone for {placedObject.MapMarker?.Name}.");
                 }
                 else if (mapMarkerZones.Value.TryGetValue(placedObject, out var encounterZones))
                 {
                     encounterZones.Add(encounterZone);
                 }
 
+                /*
+                state.LoadOrder.PriorityOrder.PlacedObject().WinningContextOverrides(cache)
+                    .Where(ctx => ctx.IsUnderneath<IWorldspaceGetter>())
+                    .Where(ctx => !string.IsNullOrEmpty(ctx.Record.MapMarker?.Name?.String))
+                    .ForEach(ctx =>
+                    {
+                        Console.WriteLine($"DBG >>> Found {ctx.Record.MapMarker?.Name} in {ctx.ModKey.FileName} : {ctx.Record.FormKey}");
+                    });
+                */
+
+                
             }
 
             Console.WriteLine();
@@ -167,8 +178,8 @@ namespace CellEncounterLevelsInName
                     var mapMarkerName = placedObject.MapMarker?.Name?.String;
                     if (mapMarkerName == null) continue;
                     
-                    sbyte minLevel = -128;
-                    sbyte maxLevel = 127;
+                    sbyte minLevel = 127;
+                    sbyte maxLevel = -128;
                     foreach ( var encounterZone in mapMarkerZone.Value)
                     {
                         minLevel = Math.Min(minLevel, encounterZone.MinLevel);
@@ -180,9 +191,10 @@ namespace CellEncounterLevelsInName
 
                     // contextual information, ready made map marker is here ... no info is known about its parent worldSpace.
                     //var modifiedMapMarker = placedObject.DeepCopy();
+                    // var matchingContext = state.LoadOrder.PriorityOrder.
 
                     var matchingContext = state.LoadOrder.PriorityOrder.PlacedObject().WinningContextOverrides(cache)
-                        .First(ctx => ctx.Record == placedObject);
+                        .First(ctx => ctx.Record.FormKey == placedObject.FormKey);
                     /*
                         .Where(context => context.Record is IPlacedObjectGetter)
                         .First(context =>
@@ -192,14 +204,13 @@ namespace CellEncounterLevelsInName
                         });
                     */
                     Console.WriteLine($"Changing Map marker from \"{mapMarkerName}\" to \"{newMarkerName}\"");
-                    var newPlacedSimple =  matchingContext.GetOrAddAsOverride(state.PatchMod);
-                    if (newPlacedSimple is PlacedObject)
-                    {
-                        var newPlacedObject = newPlacedSimple as PlacedObject;
-                        if (newPlacedObject == null || newPlacedObject.MapMarker == null) continue;
-                        newPlacedObject.MapMarker.Name = newMarkerName;
-                    }
+                    var newPlacedObject =  matchingContext.GetOrAddAsOverride(state.PatchMod);
+
+                    //var newPlacedObject = placedOverride as PlacedObject;
+                    if (newPlacedObject == null || newPlacedObject.MapMarker == null) continue;
+                    newPlacedObject.MapMarker.Name = newMarkerName;
                     mapMarkerCounter++;
+                    
                 }
             }
 
