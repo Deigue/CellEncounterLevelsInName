@@ -97,7 +97,8 @@ namespace CellEncounterLevelsInName
             int mapMarkerCounter = 0;
             ILinkCache cache = state.LinkCache;
             //Lazy<Dictionary<FormKey, HashSet<IEncounterZoneGetter>>> mapMarkerZones = new Lazy<Dictionary<FormKey, HashSet<IEncounterZoneGetter>>>();
-            Lazy<Dictionary<IPlacedObjectGetter, HashSet<IEncounterZoneGetter>>> mapMarkerZones = new Lazy<Dictionary<IPlacedObjectGetter, HashSet<IEncounterZoneGetter>>>();
+            var mapMarkerZones = new Lazy<Dictionary<IPlacedObjectGetter, HashSet<IEncounterZoneGetter>>>(() =>
+                new Dictionary<IPlacedObjectGetter, HashSet<IEncounterZoneGetter>>(MajorRecord.FormKeyEqualityComparer));
 
             foreach (var cellContext in state.LoadOrder.PriorityOrder.Cell().WinningContextOverrides(cache))
             {
