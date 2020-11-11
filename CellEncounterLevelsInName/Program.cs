@@ -166,14 +166,13 @@ namespace CellEncounterLevelsInName
                 foreach (var mapMarkerZone in mapMarkerZones.Value)
                 {
                     var placedObject = mapMarkerZone.Key;
-                    if (placedObject == null) continue;
                     var mapMarkerName = placedObject.MapMarker?.Name?.String;
                     if (mapMarkerName == null) continue;
                     if (!markerContexts.Value.TryGetValue(placedObject.FormKey, out var matchingContext)) continue;
 
                     sbyte minLevel = 127;
                     sbyte maxLevel = -128;
-                    foreach ( var encounterZone in mapMarkerZone.Value)
+                    foreach (var encounterZone in mapMarkerZone.Value)
                     {
                         minLevel = Math.Min(minLevel, encounterZone.MinLevel);
                         maxLevel = Math.Max(maxLevel, encounterZone.MaxLevel);
@@ -181,35 +180,18 @@ namespace CellEncounterLevelsInName
 
                     var newMarkerName = configuration.MakeNewName(mapMarkerName, minLevel, maxLevel);
 
-
-                    // contextual information, ready made map marker is here ... no info is known about its parent worldSpace.
-                    //var modifiedMapMarker = placedObject.DeepCopy();
-                    // var matchingContext = state.LoadOrder.PriorityOrder.
-                    /*
-                    var matchingContext = state.LoadOrder.PriorityOrder.PlacedObject().WinningContextOverrides(cache)
-                        .First(ctx => ctx.Record.FormKey == placedObject.FormKey);
-                    
-                        .Where(context => context.Record is IPlacedObjectGetter)
-                        .First(context =>
-                        {
-                            var placedObj = context.Record as IPlacedObjectGetter;
-                            return (placedObj == placedObject);
-                        });
-                    */
-
                     Console.WriteLine($"Changing Map marker from \"{mapMarkerName}\" to \"{newMarkerName}\"");
-                    var newPlacedObject =  matchingContext.GetOrAddAsOverride(state.PatchMod);
 
-                    Console.WriteLine($"newPlacedObject: {newPlacedObject.FormKey}");
-                    //var newPlacedObject = placedOverride as PlacedObject;
-                    if (newPlacedObject == null || newPlacedObject.MapMarker == null) continue;
+                    IPlacedObject newPlacedObject =  matchingContext.GetOrAddAsOverride(state.PatchMod);
+
+                    //Console.WriteLine($"newPlacedObject: {newPlacedObject.FormKey}");
+                    if (newPlacedObject.MapMarker == null) continue;
                     newPlacedObject.MapMarker.Name = newMarkerName;
                     mapMarkerCounter++;
 
-                    
                     if (mapMarkerCounter == 5)
                     {
-                        // good enuf sample size, stop here.
+                        // good enuf sample size for testing, stop here. [current bug: only one override appears for persistent obj like MapMarkers.
                         break;
                     }
 
