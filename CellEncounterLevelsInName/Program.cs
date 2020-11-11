@@ -104,7 +104,7 @@ namespace CellEncounterLevelsInName
             if (changeMapMarkers)
             {
                 state.LoadOrder.PriorityOrder.PlacedObject().WinningContextOverrides(cache)
-                    .Where(ctx => string.IsNullOrEmpty(ctx.Record.MapMarker?.Name?.String))
+                    .Where(ctx => !string.IsNullOrEmpty(ctx.Record.MapMarker?.Name?.String))
                     .ForEach(ctx => markerContexts.Value.Add(ctx.Record.FormKey, ctx));
             }
 
@@ -126,7 +126,7 @@ namespace CellEncounterLevelsInName
 
                 var newCellName = configuration.MakeNewName(cellName, minLevel, maxLevel);
                
-                Console.WriteLine($"Changing Cell name from \"{cellName}\" to \"{newCellName}\"");
+                //Console.WriteLine($"Changing Cell name from \"{cellName}\" to \"{newCellName}\"");
 
                 var overriddenCell = cellContext.GetOrAddAsOverride(state.PatchMod);
                 overriddenCell.Name = newCellName;
@@ -205,6 +205,7 @@ namespace CellEncounterLevelsInName
                     if (newPlacedObject == null || newPlacedObject.MapMarker == null) continue;
                     newPlacedObject.MapMarker.Name = newMarkerName;
                     mapMarkerCounter++;
+
                     
                     if (mapMarkerCounter == 5)
                     {
