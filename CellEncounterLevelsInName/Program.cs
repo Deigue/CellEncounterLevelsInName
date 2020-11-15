@@ -189,11 +189,13 @@ namespace CellEncounterLevelsInName
                     newPlacedObject.MapMarker.Name = newMarkerName;
                     mapMarkerCounter++;
 
+                    /*
                     if (mapMarkerCounter == 5)
                     {
                         // good enuf sample size for testing, stop here. [current bug: only one override appears for persistent obj like MapMarkers.
                         break;
                     }
+                    */
 
                 }
             }
