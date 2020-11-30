@@ -12,7 +12,6 @@ namespace CellEncounterLevelsInName
 {
     public static class Program
     {
-
         public static int Main(string[] args)
         {
             return SynthesisPipeline.Instance.Patch<ISkyrimMod, ISkyrimModGetter>(
@@ -35,10 +34,10 @@ namespace CellEncounterLevelsInName
             if (jObject.ContainsKey(keyName))
             {
                 var parse = jObject[keyName]?
-                .ToString()
-                .Replace("{name}", "{0}")
-                .Replace("{min}", "{1}")
-                .Replace("{max}", "{2}");
+                    .ToString()
+                    .Replace("{name}", "{0}")
+                    .Replace("{min}", "{1}")
+                    .Replace("{max}", "{2}");
 
                 if (parse != null) parsedString = parse;
             }
@@ -46,19 +45,14 @@ namespace CellEncounterLevelsInName
             return parsedString != "ERROR";
         }
 
-       
 
-        public static void RunPatch(SynthesisState<ISkyrimMod, ISkyrimModGetter> state)
+        private static void RunPatch(SynthesisState<ISkyrimMod, ISkyrimModGetter> state)
         {
-            bool debugMode = true; // more debugging messages.
-            //bool changeMapMarkers = false; // make this configurable later.
-            bool changeMapMarkers = true;
+            bool debugMode = false; // more debugging messages.
+            bool changeMapMarkers = false;
 
             Console.WriteLine(); // Spaces out this patchers output.
 
-            string formulaRangedLeveled = "";
-            string formulaDeleveled = "";
-            string formulaLeveled = "";
             string configFilePath = Path.Combine(state.ExtraSettingsDataPath, "config.json");
 
             if (!File.Exists(configFilePath))
@@ -68,14 +62,16 @@ namespace CellEncounterLevelsInName
             }
 
             JObject config = JObject.Parse(File.ReadAllText(configFilePath));
-            
-            
 
-            if (!ParseTemplateString(config, "formulaRangedLeveled", out formulaRangedLeveled) ||
-                !ParseTemplateString(config, "formulaDeleveled", out formulaDeleveled) ||
-                !ParseTemplateString(config, "formulaLeveled", out formulaLeveled))
+            if (config.TryGetValue("patchMapMarkers", out var jToken))
+                changeMapMarkers = jToken.Value<bool?>() ?? false;
+
+            if (!ParseTemplateString(config, "formulaRangedLeveled", out string formulaRangedLeveled) ||
+                !ParseTemplateString(config, "formulaDeleveled", out string formulaDeleveled) ||
+                !ParseTemplateString(config, "formulaLeveled", out string formulaLeveled))
             {
-                Console.WriteLine("Fields \"formulaRangedLeveled\", \"formulaDeleveled\" and \"formulaLeveled\" must be specified in \"config.json\"");
+                Console.WriteLine(
+                    "Fields \"formulaRangedLeveled\", \"formulaDeleveled\" and \"formulaLeveled\" must be specified in \"config.json\"");
                 return;
             }
 
@@ -89,16 +85,18 @@ namespace CellEncounterLevelsInName
             Console.WriteLine("*****************************************************");
             Console.WriteLine();
 
-            int cellCounter = 0;
-            int mapMarkerCounter = 0;
+            var cellCounter = 0;
+            var mapMarkerCounter = 0;
             ILinkCache cache = state.LinkCache;
-            var markerContexts = new Lazy<Dictionary<FormKey, ModContext<ISkyrimMod, IPlacedObject, IPlacedObjectGetter>>>();
+            var markerContexts =
+                new Lazy<Dictionary<FormKey, ModContext<ISkyrimMod, IPlacedObject, IPlacedObjectGetter>>>();
             var mapMarkerZones = new Lazy<Dictionary<IPlacedObjectGetter, HashSet<IEncounterZoneGetter>>>(() =>
-                new Dictionary<IPlacedObjectGetter, HashSet<IEncounterZoneGetter>>(MajorRecord.FormKeyEqualityComparer));
+                new Dictionary<IPlacedObjectGetter, HashSet<IEncounterZoneGetter>>(MajorRecord
+                    .FormKeyEqualityComparer));
 
-            Console.WriteLine($"Loading all winning map markers for changing later ...");
             if (changeMapMarkers)
             {
+                Console.WriteLine("Loading all winning map markers for changing later ...");
                 state.LoadOrder.PriorityOrder.PlacedObject().WinningContextOverrides(cache)
                     .Where(ctx => !string.IsNullOrEmpty(ctx.Record.MapMarker?.Name?.String))
                     .ForEach(ctx => markerContexts.Value.Add(ctx.Record.FormKey, ctx));
@@ -108,21 +106,22 @@ namespace CellEncounterLevelsInName
             foreach (var cellContext in state.LoadOrder.PriorityOrder.Cell().WinningContextOverrides(cache))
             {
                 var cell = cellContext.Record;
-                if (string.IsNullOrEmpty(cell.Name?.String) || cell.EncounterZone.FormKey == null || cellContext.IsUnderneath<IWorldspaceGetter>())
+                if (string.IsNullOrEmpty(cell.Name?.String) || cell.EncounterZone.FormKey is null ||
+                    cellContext.IsUnderneath<IWorldspaceGetter>())
                 {
                     continue;
                 }
 
                 cell.EncounterZone.TryResolve(cache, out var encounterZone);
-                if (encounterZone == null) continue;
+                if (encounterZone is null) continue;
 
                 string cellName = cell.Name.String;
                 sbyte minLevel = encounterZone.MinLevel;
                 sbyte maxLevel = encounterZone.MaxLevel;
 
                 var newCellName = configuration.MakeNewName(cellName, minLevel, maxLevel);
-               
-                //Console.WriteLine($"Changing Cell name from \"{cellName}\" to \"{newCellName}\"");
+
+                Console.WriteLine($"Changing Cell name from \"{cellName}\" to \"{newCellName}\"");
 
                 var overriddenCell = cellContext.GetOrAddAsOverride(state.PatchMod);
                 overriddenCell.Name = newCellName;
@@ -131,15 +130,16 @@ namespace CellEncounterLevelsInName
                 if (!changeMapMarkers) continue;
 
                 cell.Location.TryResolve(cache, out var location);
-                if (location == null) continue;
+                if (location is null) continue;
                 FormKey markerFormKey = location.WorldLocationMarkerRef.FormKey ?? FormKey.Null;
-                if (markerFormKey == FormKey.Null || !markerContexts.Value.TryGetValue(markerFormKey, out var placedContext) || placedContext == null) continue;
+                if (markerFormKey == FormKey.Null ||
+                    !markerContexts.Value.TryGetValue(markerFormKey, out var placedContext)) continue;
 
                 var placedObject = placedContext.Record;
-                var mapMarker = placedObject.MapMarker;
                 if (!mapMarkerZones.Value.ContainsKey(placedObject))
                 {
-                    var encounterZones = new HashSet<IEncounterZoneGetter>(MajorRecord.FormKeyEqualityComparer) {encounterZone};
+                    var encounterZones = new HashSet<IEncounterZoneGetter>(MajorRecord.FormKeyEqualityComparer)
+                        {encounterZone};
                     mapMarkerZones.Value.Add(placedObject, encounterZones);
 
                     if (debugMode) Console.WriteLine($">> New MapMarkerZone for {placedObject.MapMarker?.Name}.");
@@ -147,28 +147,29 @@ namespace CellEncounterLevelsInName
                 else if (mapMarkerZones.Value.TryGetValue(placedObject, out var encounterZones))
                 {
                     encounterZones.Add(encounterZone);
-                    if (debugMode) Console.WriteLine($">>>> New ECZN {encounterZone.FormKey} for {placedObject.MapMarker?.Name}.");
+                    if (debugMode)
+                        Console.WriteLine($">>>> New ECZN {encounterZone.FormKey} for {placedObject.MapMarker?.Name}.");
                 }
             }
 
             Console.WriteLine();
             Console.WriteLine($"Patched {cellCounter} Cells.");
             Console.WriteLine();
-            
+
 
             if (mapMarkerZones.IsValueCreated) // Implies activity occurred in populating map marker zones ...
             {
                 Console.WriteLine($"Patching Map Marker Names ...");
-                foreach (var mapMarkerZone in mapMarkerZones.Value)
+                Console.WriteLine();
+                foreach (var (placedObject, encounterZoneSet) in mapMarkerZones.Value)
                 {
-                    var placedObject = mapMarkerZone.Key;
                     var mapMarkerName = placedObject.MapMarker?.Name?.String;
-                    if (mapMarkerName == null) continue;
+                    if (mapMarkerName is null) continue;
                     if (!markerContexts.Value.TryGetValue(placedObject.FormKey, out var matchingContext)) continue;
 
                     sbyte minLevel = 127;
                     sbyte maxLevel = -128;
-                    foreach (var encounterZone in mapMarkerZone.Value)
+                    foreach (var encounterZone in encounterZoneSet)
                     {
                         minLevel = Math.Min(minLevel, encounterZone.MinLevel);
                         maxLevel = Math.Max(maxLevel, encounterZone.MaxLevel);
@@ -178,21 +179,11 @@ namespace CellEncounterLevelsInName
 
                     Console.WriteLine($"Changing Map marker from \"{mapMarkerName}\" to \"{newMarkerName}\"");
 
-                    IPlacedObject newPlacedObject =  matchingContext.GetOrAddAsOverride(state.PatchMod);
-
-                    //Console.WriteLine($"newPlacedObject: {newPlacedObject.FormKey}");
-                    if (newPlacedObject.MapMarker == null) continue;
+                    IPlacedObject newPlacedObject = matchingContext.GetOrAddAsOverride(state.PatchMod);
+                    
+                    if (newPlacedObject.MapMarker is null) continue; // Should never happen, but doesn't hurt.
                     newPlacedObject.MapMarker.Name = newMarkerName;
                     mapMarkerCounter++;
-
-                    /*
-                    if (mapMarkerCounter == 5)
-                    {
-                        // good enuf sample size for testing, stop here. [current bug: only one override appears for persistent obj like MapMarkers.
-                        break;
-                    }
-                    */
-
                 }
             }
 
