@@ -81,6 +81,7 @@ namespace CellEncounterLevelsInName
             Console.WriteLine($" formulaRangedLeveled: {configuration.FormulaRangedLeveled}");
             Console.WriteLine($" formulaDeleveled: {configuration.FormulaDeleveled}");
             Console.WriteLine($" formulaLeveled: {configuration.FormulaLeveled}");
+            Console.WriteLine($" patchMapMarkers: {changeMapMarkers}");
             Console.WriteLine("Running Cell Encounter Levels In Name ...");
             Console.WriteLine("*****************************************************");
             Console.WriteLine();
@@ -159,8 +160,7 @@ namespace CellEncounterLevelsInName
 
             if (mapMarkerZones.IsValueCreated) // Implies activity occurred in populating map marker zones ...
             {
-                Console.WriteLine($"Patching Map Marker Names ...");
-                Console.WriteLine();
+                Console.WriteLine("Patching Map Marker Names ...");
                 foreach (var (placedObject, encounterZoneSet) in mapMarkerZones.Value)
                 {
                     var mapMarkerName = placedObject.MapMarker?.Name?.String;
