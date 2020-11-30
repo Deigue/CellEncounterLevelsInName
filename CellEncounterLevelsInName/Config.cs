@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace CellEncounterLevelsInName
+﻿namespace CellEncounterLevelsInName
 {
     public class Config
     {
@@ -10,10 +6,10 @@ namespace CellEncounterLevelsInName
         public string FormulaDeleveled { get; set; }
         public string FormulaLeveled { get; set; }
 
-        public Config(string formulaRangedLeveled, string formulaDeleved, string formulaLeveled)
+        public Config(string formulaRangedLeveled, string formulaDeleveled, string formulaLeveled)
         {
             FormulaRangedLeveled = formulaRangedLeveled;
-            FormulaDeleveled = formulaDeleved;
+            FormulaDeleveled = formulaDeleveled;
             FormulaLeveled = formulaLeveled;
         }
 
