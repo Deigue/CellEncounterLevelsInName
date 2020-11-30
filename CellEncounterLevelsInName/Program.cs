@@ -7,14 +7,11 @@ using Mutagen.Bethesda.Skyrim;
 using Noggog;
 using Alphaleonis.Win32.Filesystem;
 using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
-using System.Runtime.InteropServices.ComTypes;
 
 namespace CellEncounterLevelsInName
 {
-    public class Program
+    public static class Program
     {
-        
 
         public static int Main(string[] args)
         {
@@ -25,7 +22,6 @@ namespace CellEncounterLevelsInName
                 {
                     ActionsForEmptyArgs = new RunDefaultPatcher
                     {
-
                         IdentifyingModKey = "CellEncounterLevelsInName.esp",
                         TargetRelease = GameRelease.SkyrimSE
                     }
