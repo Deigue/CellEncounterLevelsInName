@@ -90,7 +90,7 @@ namespace CellEncounterLevelsInName
             var mapMarkerCounter = 0;
             ILinkCache cache = state.LinkCache;
             var markerContexts =
-                new Lazy<Dictionary<FormKey, ModContext<ISkyrimMod, IPlacedObject, IPlacedObjectGetter>>>();
+                new Lazy<Dictionary<FormKey, IModContext<ISkyrimMod, IPlacedObject, IPlacedObjectGetter>>>();
             var mapMarkerZones = new Lazy<Dictionary<IPlacedObjectGetter, HashSet<IEncounterZoneGetter>>>(() =>
                 new Dictionary<IPlacedObjectGetter, HashSet<IEncounterZoneGetter>>(MajorRecord
                     .FormKeyEqualityComparer));
@@ -107,7 +107,7 @@ namespace CellEncounterLevelsInName
             foreach (var cellContext in state.LoadOrder.PriorityOrder.Cell().WinningContextOverrides(cache))
             {
                 var cell = cellContext.Record;
-                if (string.IsNullOrEmpty(cell.Name?.String) || cell.EncounterZone.FormKey is null ||
+                if (string.IsNullOrEmpty(cell.Name?.String) || cell.EncounterZone.FormKeyNullable is null ||
                     cellContext.IsUnderneath<IWorldspaceGetter>())
                 {
                     continue;
@@ -132,7 +132,7 @@ namespace CellEncounterLevelsInName
 
                 cell.Location.TryResolve(cache, out var location);
                 if (location is null) continue;
-                FormKey markerFormKey = location.WorldLocationMarkerRef.FormKey ?? FormKey.Null;
+                FormKey markerFormKey = location.WorldLocationMarkerRef.FormKey;
                 if (markerFormKey == FormKey.Null ||
                     !markerContexts.Value.TryGetValue(markerFormKey, out var placedContext)) continue;
 
