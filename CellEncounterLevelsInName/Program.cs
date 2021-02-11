@@ -5,27 +5,26 @@ using Mutagen.Bethesda;
 using Mutagen.Bethesda.Synthesis;
 using Mutagen.Bethesda.Skyrim;
 using Noggog;
-using Alphaleonis.Win32.Filesystem;
 using Newtonsoft.Json.Linq;
+using System.Threading.Tasks;
+using System.IO;
 
 namespace CellEncounterLevelsInName
 {
     public static class Program
     {
-        public static int Main(string[] args)
+        public static Task<int> Main(string[] args)
         {
-            return SynthesisPipeline.Instance.Patch<ISkyrimMod, ISkyrimModGetter>(
-                args: args,
-                patcher: RunPatch,
-                new UserPreferences()
+            return SynthesisPipeline.Instance
+                .AddPatch<ISkyrimMod, ISkyrimModGetter>(RunPatch)
+                .Run(args, new RunPreferences()
                 {
                     ActionsForEmptyArgs = new RunDefaultPatcher
                     {
                         IdentifyingModKey = "CellEncounterLevelsInName.esp",
                         TargetRelease = GameRelease.SkyrimSE
                     }
-                }
-            );
+                });
         }
 
         private static bool ParseTemplateString(JObject jObject, string keyName, out string parsedString)
@@ -46,7 +45,7 @@ namespace CellEncounterLevelsInName
         }
 
 
-        private static void RunPatch(SynthesisState<ISkyrimMod, ISkyrimModGetter> state)
+        private static void RunPatch(IPatcherState<ISkyrimMod, ISkyrimModGetter> state)
         {
             bool debugMode = false; // more debugging messages.
             bool changeMapMarkers = false;
