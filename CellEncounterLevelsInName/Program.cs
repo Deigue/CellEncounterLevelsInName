@@ -89,7 +89,7 @@ namespace CellEncounterLevelsInName
             var mapMarkerCounter = 0;
             ILinkCache cache = state.LinkCache;
             var markerContexts =
-                new Lazy<Dictionary<FormKey, IModContext<ISkyrimMod, IPlacedObject, IPlacedObjectGetter>>>();
+                new Lazy<Dictionary<FormKey, IModContext<ISkyrimMod, ISkyrimModGetter, IPlacedObject, IPlacedObjectGetter>>>();
             var mapMarkerZones = new Lazy<Dictionary<IPlacedObjectGetter, HashSet<IEncounterZoneGetter>>>(() =>
                 new Dictionary<IPlacedObjectGetter, HashSet<IEncounterZoneGetter>>(MajorRecord
                     .FormKeyEqualityComparer));
