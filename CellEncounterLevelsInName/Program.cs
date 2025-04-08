@@ -8,6 +8,9 @@ using Noggog;
 using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
 using System.IO;
+using Mutagen.Bethesda.Plugins;
+using Mutagen.Bethesda.Plugins.Cache;
+using Mutagen.Bethesda.Plugins.Records;
 
 namespace CellEncounterLevelsInName
 {
@@ -52,7 +55,7 @@ namespace CellEncounterLevelsInName
 
             Console.WriteLine(); // Spaces out this patchers output.
 
-            string configFilePath = Path.Combine(state.ExtraSettingsDataPath, "config.json");
+            string configFilePath = Path.Combine(state.ExtraSettingsDataPath!, "config.json");
 
             if (!File.Exists(configFilePath))
             {
@@ -116,8 +119,8 @@ namespace CellEncounterLevelsInName
                 if (encounterZone is null) continue;
 
                 string cellName = cell.Name.String;
-                sbyte minLevel = encounterZone.MinLevel;
-                sbyte maxLevel = encounterZone.MaxLevel;
+                var minLevel = encounterZone.MinLevel;
+                var maxLevel = encounterZone.MaxLevel;
 
                 var newCellName = configuration.MakeNewName(cellName, minLevel, maxLevel);
 
@@ -166,8 +169,8 @@ namespace CellEncounterLevelsInName
                     if (mapMarkerName is null) continue;
                     if (!markerContexts.Value.TryGetValue(placedObject.FormKey, out var matchingContext)) continue;
 
-                    sbyte minLevel = 127;
-                    sbyte maxLevel = -128;
+                    byte minLevel = byte.MaxValue;
+                    byte maxLevel = byte.MinValue;
                     foreach (var encounterZone in encounterZoneSet)
                     {
                         minLevel = Math.Min(minLevel, encounterZone.MinLevel);

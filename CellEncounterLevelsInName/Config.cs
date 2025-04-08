@@ -13,7 +13,7 @@
             FormulaLeveled = formulaLeveled;
         }
 
-        public string MakeNewName(string oldName, sbyte minLevel, sbyte maxLevel)
+        public string MakeNewName(string oldName, byte minLevel, byte maxLevel)
         {
             string nameTemplate;
             if (maxLevel > minLevel)
